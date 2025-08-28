@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cube Craft</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1020; }
+    #crosshair {
+      position: fixed; top: 50%; left: 50%;
+      width: 6px; height: 6px;
+      margin-left: -3px; margin-top: -3px;
+      border: 2px solid white; border-radius: 50%;
+      pointer-events: none; z-index: 10;
+    }
+    #status {
+      position: fixed; top: 10px; left: 10px;
+      color: white; font-family: monospace;
+      background: rgba(0,0,0,.4); padding: 4px 6px;
+      border-radius: 4px;
+    }
+    #fps {
+      position: fixed; top: 10px; right: 10px;
+      color: lime; font-family: monospace;
+      background: rgba(0,0,0,.4); padding: 4px 6px;
+      border-radius: 4px;
+    }
+    #hint {
+      position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+      color: #ffd166; font-family: monospace; background: rgba(0,0,0,.45);
+      padding: 6px 10px; border-radius: 6px;
+    }
+    #playerHUD {
+      position: fixed; bottom: 10px; left: 10px;
+      color: white; font-family: monospace;
+      background: rgba(0,0,0,.5); padding: 4px 6px;
+      border-radius: 4px;
+    }
+    #timeDisplay {
+      position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+      color: white; font-family: monospace;
+      background: rgba(0,0,0,.4); padding: 4px 6px;
+      border-radius: 4px;
+    }
+    /* NEW: Death overlay */
+    #deathOverlay{
+      position: fixed; inset: 0;
+      background: black;
+      color: #ff2d2d;
+      font-family: monospace;
+      font-size: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+      z-index: 9999;
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px rgba(255,0,0,.6);
+    }
+    /* Developer Terminal */
+    #terminal {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 200px;
+      background: rgba(0, 0, 0, 0.9);
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      border-top: 2px solid #00ff00;
+      display: none;
+      flex-direction: column;
+      z-index: 10000;
+    }
+    #terminalOutput {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    #terminalInput {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #00ff00;
+    }
+    #terminalPrompt {
+      color: #00ff00;
+      margin-right: 5px;
+    }
+    #terminalCommand {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      outline: none;
+    }
+    /* Developer GUI */
+    #devGUI {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid #00ff00;
+      display: none;
+      z-index: 10001;
+      min-width: 400px;
+    }
+    #devGUI h2 {
+      color: #00ff00;
+      margin-top: 0;
+      text-align: center;
+    }
+    .dev-option {
+      margin: 15px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .dev-button {
+      background: #333;
+      color: white;
+      border: 1px solid #00ff00;
+      padding: 5px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+    }
+    .dev-button:hover {
+      background: #00ff00;
+      color: black;
+    }
+    .dev-button.active {
+      background: #00ff00;
+      color: black;
+    }
+    .dev-slider {
+      width: 150px;
+      margin-left: 10px;
+    }
+    #closeDevGUI {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: #ff4444;
+      color: white;
+      border: none;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    /* Difficulty Selection Screen */
+    #difficultyScreen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #0b1020 0%, #1a2040 100%);
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10002;
+    }
+    
+    #difficultyScreen h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+      text-shadow: 0 0 20px rgba(135, 181, 255, 0.8);
+      color: #87b5ff;
+    }
+    
+    #difficultyScreen h2 {
+      font-size: 24px;
+      margin-bottom: 40px;
+      color: #cccccc;
+    }
+    
+    .difficulty-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 800px;
+      width: 100%;
+      padding: 0 20px;
+    }
+    
+    .difficulty-card {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid transparent;
+      border-radius: 15px;
+      padding: 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+    
+    .difficulty-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .difficulty-card.peaceful {
+      border-color: #4CAF50;
+    }
+    
+    .difficulty-card.peaceful:hover {
+      background: rgba(76, 175, 80, 0.2);
+      border-color: #66BB6A;
+    }
+    
+    .difficulty-card.normal {
+      border-color: #2196F3;
+    }
+    
+    .difficulty-card.normal:hover {
+      background: rgba(33, 150, 243, 0.2);
+      border-color: #42A5F5;
+    }
+    
+    .difficulty-card.hard {
+      border-color: #FF9800;
+    }
+    
+    .difficulty-card.hard:hover {
+      background: rgba(255, 152, 0, 0.2);
+      border-color: #FFB74D;
+    }
+    
+    .difficulty-card.ultra {
+      border-color: #F44336;
+    }
+    
+    .difficulty-card.ultra:hover {
+      background: rgba(244, 67, 54, 0.2);
+      border-color: #EF5350;
+    }
+    
+    .difficulty-title {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    
+    .difficulty-description {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #cccccc;
+      text-align: center;
+    }
+    
+    .difficulty-stats {
+      margin-top: 15px;
+      font-size: 12px;
+      color: #aaaaaa;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <!-- Difficulty Selection Screen -->
+  <div id="difficultyScreen">
+    <h1>🎯 Cube Craft</h1>
+    <h2>Choose Your Difficulty</h2>
+    
+    <div class="difficulty-options">
+      <div class="difficulty-card peaceful" onclick="startGame('peaceful')">
+        <div class="difficulty-title">🕊️ Peaceful</div>
+        <div class="difficulty-description">
+          Enemies move around but won't attack you. Perfect for exploring and practicing movement.
+        </div>
+        <div class="difficulty-stats">
+          • Enemies don't attack<br>
+          • Normal health and bandages<br>
+          • Relaxed gameplay
+        </div>
+      </div>
+      
+      <div class="difficulty-card normal" onclick="startGame('normal')">
+        <div class="difficulty-title">⚔️ Normal</div>
+        <div class="difficulty-description">
+          Standard gameplay experience with balanced combat and survival mechanics.
+        </div>
+        <div class="difficulty-stats">
+          • 10 HP, 2 bandages<br>
+          • Enemies have 5 HP<br>
+          • Bandages heal 4 HP in 5s<br>
+          • Manual enemy spawning (key 2)
+        </div>
+      </div>
+      
+      <div class="difficulty-card hard" onclick="startGame('hard')">
+        <div class="difficulty-title">🔥 Hard</div>
+        <div class="difficulty-description">
+          Increased challenge with tougher enemies and automatic spawning. Test your skills!
+        </div>
+        <div class="difficulty-stats">
+          • 10 HP, 2 bandages<br>
+          • Enemies have 8 HP<br>
+          • 3 enemies spawn every 10s<br>
+          • Manual spawning still works
+        </div>
+      </div>
+      
+      <div class="difficulty-card ultra" onclick="startGame('ultra')">
+        <div class="difficulty-title">💀 Ultra</div>
+        <div class="difficulty-description">
+          Extreme challenge for hardcore players. High health, powerful healing, but overwhelming enemies.
+        </div>
+        <div class="difficulty-stats">
+          • 20 HP, 2 bandages<br>
+          • Bandages heal 10 HP in 7s<br>
+          • 5 enemies spawn every 10s<br>
+          • Enemies shoot much more often
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="crosshair"></div>
+  <div id="status">Click canvas to lock pointer</div>
+  <div id="fps">FPS: 0</div>
+  <div id="timeDisplay">Day 1 - 06:00</div>
+  <div id="hint">W/↑ to move, SPACE to jump. Face a ladder and hold W/↑ to climb. Press 2 to spawn enemy. Press B to use bandage.</div>
+  <div id="playerHUD">HP:10 | Bandages:2</div>
+  <!-- NEW: death screen -->
+  <div id="deathOverlay">YOU DIED</div>
+  
+  <!-- Developer Terminal -->
+  <div id="terminal">
+    <div id="terminalOutput">Developer Terminal v1.0
+Type '/dev options' to access developer options
+Type 'help' for available commands
+Type 'clear' to clear terminal
+Press '~' to toggle terminal
+
+> </div>
+    <div id="terminalInput">
+      <span id="terminalPrompt">> </span>
+      <input type="text" id="terminalCommand" autocomplete="off">
+    </div>
+  </div>
+  
+  <!-- Developer GUI -->
+  <div id="devGUI">
+    <button id="closeDevGUI">×</button>
+    <h2>🛠️ Developer Options</h2>
+    
+    <div class="dev-option">
+      <label>Flying Mode:</label>
+      <button class="dev-button" id="flyToggle">OFF</button>
+    </div>
+    
+    <div class="dev-option">
+      <label>Time Speed:</label>
+      <input type="range" class="dev-slider" id="timeSpeed" min="0" max="10" step="0.5" value="1">
+      <span id="timeSpeedValue">1x</span>
+    </div>
+    
+    <div class="dev-option">
+      <label>Infinite Health:</label>
+      <button class="dev-button" id="godModeToggle">OFF</button>
+    </div>
+    
+    <div class="dev-option">
+      <label>Enemies Don't Attack:</label>
+      <button class="dev-button" id="peacefulToggle">OFF</button>
+    </div>
+    
+    <div class="dev-option">
+      <label>Set Time:</label>
+      <button class="dev-button" onclick="setTime(0)">Dawn</button>
+      <button class="dev-button" onclick="setTime(0.25)">Noon</button>
+      <button class="dev-button" onclick="setTime(0.5)">Dusk</button>
+      <button class="dev-button" onclick="setTime(0.75)">Night</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+  <script>
+  // Global difficulty settings
+  let currentDifficulty = 'normal';
+  let gameStarted = false;
+  
+  function startGame(difficulty) {
+    currentDifficulty = difficulty;
+    gameStarted = true;
+    document.getElementById('difficultyScreen').style.display = 'none';
+    
+    // Apply difficulty-specific settings
+    applyDifficultySettings();
+    
+    // Start the main game
+    initGame();
+  }
+  
+  function applyDifficultySettings() {
+    const settings = getDifficultySettings(currentDifficulty);
+    
+    // Apply settings to global variables (will be used in initGame)
+    window.difficultySettings = settings;
+  }
+  
+  function getDifficultySettings(difficulty) {
+    const settings = {
+      peaceful: {
+        playerMaxHP: 10,
+        playerStartHP: 10,
+        playerBandages: 2,
+        bandageHealAmount: 4,
+        bandageHealTime: 500,
+        enemyHP: 5,
+        enemyAttack: false,
+        autoSpawn: false,
+        autoSpawnCount: 0,
+        autoSpawnInterval: 0,
+        enemyShootFrequency: 1.0
+      },
+      normal: {
+        playerMaxHP: 10,
+        playerStartHP: 10,
+        playerBandages: 2,
+        bandageHealAmount: 4,
+        bandageHealTime: 500,
+        enemyHP: 5,
+        enemyAttack: true,
+        autoSpawn: false,
+        autoSpawnCount: 0,
+        autoSpawnInterval: 0,
+        enemyShootFrequency: 1.0
+      },
+      hard: {
+        playerMaxHP: 10,
+        playerStartHP: 10,
+        playerBandages: 2,
+        bandageHealAmount: 4,
+        bandageHealTime: 500,
+        enemyHP: 8,
+        enemyAttack: true,
+        autoSpawn: true,
+        autoSpawnCount: 3,
+        autoSpawnInterval: 10000,
+        enemyShootFrequency: 1.0
+      },
+      ultra: {
+        playerMaxHP: 20,
+        playerStartHP: 20,
+        playerBandages: 2,
+        bandageHealAmount: 10,
+        bandageHealTime: 700,
+        enemyHP: 5,
+        enemyAttack: true,
+        autoSpawn: true,
+        autoSpawnCount: 5,
+        autoSpawnInterval: 10000,
+        enemyShootFrequency: 0.3 // Much more frequent shooting
+      }
+    };
+    
+    return settings[difficulty] || settings.normal;
+  }
+  
+  function initGame() {
+  (() => {
+    // Get difficulty settings
+    const settings = window.difficultySettings || getDifficultySettings('normal');
+    
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87b5ff);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
+
+    // lights
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+    scene.add(hemi);
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(-60,80,40);
+    scene.add(dir);
+
+    // Day/Night cycle variables
+    let gameTime = 0; // in seconds
+    const dayLength = 420; // 7 minutes per day
+    let timeSpeedMultiplier = 1; // Developer option
+    const timeDisplay = document.getElementById("timeDisplay");
+    
+    // Smooth interpolation function
+    function smoothStep(edge0, edge1, x) {
+      const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+      return t * t * (3 - 2 * t);
+    }
+    
+    function updateDayNightCycle(dt) {
+      gameTime += dt * timeSpeedMultiplier; // Apply time speed multiplier
+      const dayProgress = (gameTime % dayLength) / dayLength; // 0 to 1
+      const dayNumber = Math.floor(gameTime / dayLength) + 1;
+      
+      // Calculate time of day (0 = midnight, 0.5 = noon)
+      const timeOfDay = dayProgress;
+      const hours = Math.floor(timeOfDay * 24);
+      const minutes = Math.floor((timeOfDay * 24 - hours) * 60);
+      
+      // Update time display
+      timeDisplay.textContent = `Day ${dayNumber} - ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      
+      // Calculate sun position and lighting with smoother transitions
+      const sunAngle = timeOfDay * Math.PI * 2 - Math.PI/2; // -π/2 to 3π/2
+      const sunHeight = Math.sin(sunAngle);
+      
+      // Update directional light (sun) position
+      dir.position.set(
+        Math.cos(sunAngle) * 100,
+        Math.max(10, sunHeight * 80 + 20),
+        Math.sin(sunAngle) * 100
+      );
+      
+      // Update sun position
+      sun.position.set(
+        Math.cos(sunAngle) * 300,
+        Math.max(50, sunHeight * 200 + 100),
+        Math.sin(sunAngle) * 300
+      );
+      
+      // Update moon position (opposite to sun)
+      moon.position.set(
+        Math.cos(sunAngle + Math.PI) * 280,
+        Math.max(50, -sunHeight * 180 + 120),
+        Math.sin(sunAngle + Math.PI) * 280
+      );
+      
+      // Smooth visibility transitions for celestial objects
+      const sunVisibility = smoothStep(-0.3, 0.1, sunHeight);
+      const moonVisibility = smoothStep(0.3, -0.1, sunHeight);
+      const starVisibility = smoothStep(0.2, -0.2, sunHeight);
+      
+      sun.material.opacity = sunVisibility;
+      sun.visible = sunVisibility > 0.01;
+      
+      moon.material.opacity = moonVisibility;
+      moon.visible = moonVisibility > 0.01;
+      
+      stars.material.opacity = starVisibility;
+      stars.visible = starVisibility > 0.01;
+      
+      // Smoother light intensity transitions
+      const dayTransition = smoothStep(-0.2, 0.3, sunHeight);
+      const nightTransition = 1 - dayTransition;
+      
+      // Adjust light intensity with smooth transitions
+      dir.intensity = Math.max(0.05, dayTransition * 0.9 + 0.1);
+      hemi.intensity = Math.max(0.15, dayTransition * 0.7 + 0.2);
+      
+      // Smoother color transitions
+      const deepNight = new THREE.Color(0x0a0f1a);
+      const twilight = new THREE.Color(0x1a1a2e);
+      const sunrise = new THREE.Color(0x2c1810);
+      const sunset = new THREE.Color(0xff7f50);
+      const dayBlue = new THREE.Color(0x87ceeb);
+      const noonBlue = new THREE.Color(0x87b5ff);
+      
+      // More granular time-based color transitions
+      if (sunHeight > 0.7) {
+        // High noon - bright blue
+        scene.background.lerpColors(dayBlue, noonBlue, smoothStep(0.7, 0.9, sunHeight));
+        dir.color.setHex(0xffffff);
+      } else if (sunHeight > 0.2) {
+        // Day time - blue sky
+        scene.background.copy(dayBlue);
+        dir.color.setHex(0xffffff);
+      } else if (sunHeight > -0.1) {
+        // Sunrise/sunset - smooth transition
+        const t = smoothStep(-0.1, 0.2, sunHeight);
+        scene.background.lerpColors(sunrise, dayBlue, t);
+        dir.color.lerpColors(new THREE.Color(0xff6600), new THREE.Color(0xffffff), t);
+      } else if (sunHeight > -0.4) {
+        // Twilight - smooth transition to night
+        const t = smoothStep(-0.4, -0.1, sunHeight);
+        scene.background.lerpColors(twilight, sunrise, t);
+        dir.color.lerpColors(new THREE.Color(0x4444aa), new THREE.Color(0xff6600), t);
+      } else {
+        // Deep night - smooth transition
+        const t = smoothStep(-0.7, -0.4, sunHeight);
+        scene.background.lerpColors(deepNight, twilight, t);
+        dir.color.setHex(0x4444aa);
+      }
+      
+      // Smooth hemisphere light color transitions
+      hemi.groundColor.lerpColors(
+        new THREE.Color(0x111122), // night ground color
+        new THREE.Color(0x444444), // day ground color
+        dayTransition
+      );
+    }
+
+    // ground with proper border - FIXED SIZE
+    const groundSize = 200;
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(groundSize, groundSize),
+      new THREE.MeshLambertMaterial({color:0x2e8b57})
+    );
+    ground.rotation.x = -Math.PI/2;
+    scene.add(ground);
+
+    // Create sun, moon, and stars with transparent materials for smooth fading
+    const sun = new THREE.Mesh(
+      new THREE.SphereGeometry(8, 16, 16),
+      new THREE.MeshBasicMaterial({ 
+        color: 0xffff00, 
+        emissive: 0xffff00, 
+        emissiveIntensity: 0.3,
+        transparent: true,
+        opacity: 1
+      })
+    );
+    scene.add(sun);
+    
+    const moon = new THREE.Mesh(
+      new THREE.SphereGeometry(6, 16, 16),
+      new THREE.MeshBasicMaterial({ 
+        color: 0xcccccc, 
+        emissive: 0x444444, 
+        emissiveIntensity: 0.2,
+        transparent: true,
+        opacity: 1
+      })
+    );
+    scene.add(moon);
+    
+    // Create stars
+    const starGeometry = new THREE.BufferGeometry();
+    const starCount = 200;
+    const starPositions = new Float32Array(starCount * 3);
+    
+    for (let i = 0; i < starCount * 3; i += 3) {
+      // Create stars in a sphere around the world
+      const radius = 800;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      
+      starPositions[i] = radius * Math.sin(phi) * Math.cos(theta);
+      starPositions[i + 1] = radius * Math.cos(phi);
+      starPositions[i + 2] = radius * Math.sin(phi) * Math.sin(theta);
+    }
+    
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMaterial = new THREE.PointsMaterial({ 
+      color: 0xffffff, 
+      size: 2,
+      transparent: true,
+      opacity: 1
+    });
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    scene.add(stars);
+
+    // player cube
+    const cube = new THREE.Mesh(
+      new THREE.BoxGeometry(3,3,3),
+      new THREE.MeshStandardMaterial({color:0x1976d2})
+    );
+    cube.position.set(0,1.5,0);
+    scene.add(cube);
+
+    // gun
+    const gun = new THREE.Mesh(
+      new THREE.BoxGeometry(0.3,0.3,1),
+      new THREE.MeshStandardMaterial({color:0x444444, metalness:0.8, roughness:0.3})
+    );
+    gun.position.set(0.4,-0.3,-1);
+    camera.add(gun);
+    scene.add(camera);
+
+    // muzzle flash light
+    const flash = new THREE.PointLight(0xffaa33, 2, 5);
+    flash.visible = false;
+    camera.add(flash);
+
+    // trees
+    const trees = [];
+    function addTree(x, z) {
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.5, 0.5, 4, 8),
+        new THREE.MeshStandardMaterial({color: 0x8b4513})
+      );
+      trunk.position.set(x, 2, z);
+      scene.add(trunk);
+      const leaves = new THREE.Mesh(
+        new THREE.ConeGeometry(3, 6, 8),
+        new THREE.MeshStandardMaterial({color: 0x228b22})
+      );
+        leaves.position.set(x, 7, z);
+      scene.add(leaves);
+      trees.push(new THREE.Box3().setFromObject(trunk));
+    }
+    for (let i = 0; i < 40; i++) {
+      const x = (Math.random() - 0.5) * (groundSize - 20);
+      const z = (Math.random() - 0.5) * (groundSize - 20);
+      if (Math.abs(x) > 15 || Math.abs(z) > 15) addTree(x, z);
+    }
+
+    // parkour platforms + ladders
+    const platforms = [];
+    const ladders = [];
+    function addPlatformWithLadder(px, py, pz, sx=15, sz=15) {
+      const plat = new THREE.Mesh(
+        new THREE.BoxGeometry(sx, 1, sz),
+        new THREE.MeshLambertMaterial({color: 0x8f8f8f})
+      );
+      plat.position.set(px, py, pz);
+      scene.add(plat);
+      platforms.push({
+        mesh: plat,
+        xMin: px - sx/2, xMax: px + sx/2,
+        zMin: pz - sz/2, zMax: pz + sz/2,
+        yTop: py + 0.5
+      });
+      const ladder = new THREE.Mesh(
+        new THREE.BoxGeometry(1, py, 1),
+        new THREE.MeshLambertMaterial({color: 0xf5b041})
+      );
+      ladder.position.set(px + sx/2 - 0.6, py/2, pz + sz/2 - 0.6);
+      scene.add(ladder);
+      const bbox = new THREE.Box3().setFromObject(ladder);
+      ladders.push({ mesh: ladder, bbox });
+    }
+    addPlatformWithLadder(0,20,-30,16,16);
+    addPlatformWithLadder(30,40,0,14,14);
+    addPlatformWithLadder(-35,65,-35,18,12);
+    addPlatformWithLadder(10,85,35,12,18);
+
+    // controls
+    const keys = {};
+    window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+    window.addEventListener("keyup",   e => keys[e.key.toLowerCase()] = false);
+
+    // pointer lock
+    let yaw = 0, pitch = 0;
+    const status = document.getElementById("status");
+    renderer.domElement.style.cursor = "none";
+    renderer.domElement.addEventListener("click", () => {
+      if (!document.pointerLockElement) renderer.domElement.requestPointerLock();
+      else if (!healing && !dead) shoot();
+    });
+    document.addEventListener("pointerlockchange", () => {
+      if (document.pointerLockElement === renderer.domElement) {
+        document.addEventListener("mousemove", onMouseMove);
+        status.textContent = "Pointer locked (Esc to unlock)";
+      } else {
+        document.removeEventListener("mousemove", onMouseMove);
+        if (!dead) status.textContent = "Pointer unlocked (click canvas to lock)";
+      }
+    });
+
+    // NEW: allow looking while healing
+    function onMouseMove(e) {
+      if (dead) return; // healing no longer blocks looking
+      const sens = 0.0025;
+      yaw   -= e.movementX * sens;
+      pitch -= e.movementY * sens;
+      pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, pitch));
+    }
+
+    // jumping & falling - FIXED GROUND COLLISION
+    let velocityY = 0;
+    const gravity = -30;
+    const jumpStrength = 12;
+    function computeGroundYAt(x, z) {
+      let groundY = 1.5;
+      
+      // Check if within ground bounds (same size as visual ground)
+      const halfGroundSize = groundSize / 2;
+      if (x >= -halfGroundSize && x <= halfGroundSize && z >= -halfGroundSize && z <= halfGroundSize) {
+        groundY = 1.5; // on ground
+      } else {
+        groundY = -1000; // fall into void if outside ground
+      }
+      
+      // Check platforms
+      for (const p of platforms) {
+        if (x >= p.xMin && x <= p.xMax && z >= p.zMin && z <= p.zMax) {
+          groundY = Math.max(groundY, p.yTop + 1.5);
+        }
+      }
+      return groundY;
+    }
+    function onLadderAt(pos) {
+      for (const l of ladders) {
+        const expanded = l.bbox.clone().expandByScalar(0.6);
+        if (expanded.containsPoint(pos)) return true;
+      }
+      return false;
+    }
+
+    // shooting
+    const bullets = [];
+    const bulletPickups = []; // Array to store bullet pickups on ground
+    const bandagePickups = []; // Array to store bandage pickups on ground
+    
+    function shoot() {
+      if (playerBullets <= 0) return; // Can't shoot without bullets
+      
+      playerBullets--; // Use one bullet
+      updateHUD();
+      
+      const dir = new THREE.Vector3(
+        Math.sin(yaw) * Math.cos(pitch),
+        Math.sin(pitch),
+        Math.cos(yaw) * Math.cos(pitch)
+      ).normalize();
+      const bullet = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1, 8, 8),
+        new THREE.MeshBasicMaterial({color:0xffff00})
+      );
+      bullet.position.copy(camera.position.clone().add(dir.clone().multiplyScalar(1.5)));
+      scene.add(bullet);
+      bullets.push({mesh: bullet, dir});
+      flash.visible = true;
+      setTimeout(() => flash.visible = false, 50);
+    }
+
+    // Create bullet pickup on ground
+    function createBulletPickup(position) {
+      const pickup = new THREE.Mesh(
+        new THREE.BoxGeometry(0.8, 0.8, 0.8),
+        new THREE.MeshStandardMaterial({
+          color: 0xffd700,
+          emissive: 0x332200,
+          emissiveIntensity: 0.3
+        })
+      );
+      
+      // Position on ground
+      const groundY = computeGroundYAt(position.x, position.z);
+      pickup.position.set(position.x, groundY - 1, position.z);
+      
+      // Add floating animation
+      pickup.userData = {
+        originalY: groundY - 1,
+        time: Math.random() * Math.PI * 2,
+        bullets: 10
+      };
+      
+      scene.add(pickup);
+      bulletPickups.push(pickup);
+    }
+    
+    // Create bandage pickup on ground
+    function createBandagePickup(position) {
+      const pickup = new THREE.Mesh(
+        new THREE.BoxGeometry(0.8, 0.8, 0.8),
+        new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          emissive: 0x222222,
+          emissiveIntensity: 0.2
+        })
+      );
+      
+      // Position on ground
+      const groundY = computeGroundYAt(position.x, position.z);
+      pickup.position.set(position.x, groundY - 1, position.z);
+      
+      // Add floating animation
+      pickup.userData = {
+        originalY: groundY - 1,
+        time: Math.random() * Math.PI * 2,
+        bandages: 1
+      };
+      
+      scene.add(pickup);
+      bandagePickups.push(pickup);
+    }
+    
+    // Update bandage pickups (floating animation and pickup detection)
+    function updateBandagePickups(dt) {
+      for (let i = bandagePickups.length - 1; i >= 0; i--) {
+        const pickup = bandagePickups[i];
+        
+        // Floating animation
+        pickup.userData.time += dt * 3;
+        pickup.position.y = pickup.userData.originalY + Math.sin(pickup.userData.time) * 0.3;
+        pickup.rotation.y += dt * 2;
+        
+        // Check if player is close enough to pick up
+        const distance = pickup.position.distanceTo(cube.position);
+        if (distance < 3) {
+          playerBandages += pickup.userData.bandages;
+          updateHUD();
+          
+          // Show pickup message
+          status.textContent = `💊 Picked up ${pickup.userData.bandages} bandage!`;
+          setTimeout(() => {
+            if (!dead && !healing) status.textContent = "Pointer locked (Esc to unlock)";
+          }, 2000);
+          
+          // Remove pickup
+          scene.remove(pickup);
+          bandagePickups.splice(i, 1);
+        }
+      }
+    }
+
+    // Update bullet pickups (floating animation and pickup detection)
+    function updateBulletPickups(dt) {
+      for (let i = bulletPickups.length - 1; i >= 0; i--) {
+        const pickup = bulletPickups[i];
+        
+        // Floating animation
+        pickup.userData.time += dt * 3;
+        pickup.position.y = pickup.userData.originalY + Math.sin(pickup.userData.time) * 0.3;
+        pickup.rotation.y += dt * 2;
+        
+        // Check if player is close enough to pick up
+        const distance = pickup.position.distanceTo(cube.position);
+        if (distance < 3) {
+          playerBullets += pickup.userData.bullets;
+          updateHUD();
+          
+          // Show pickup message
+          status.textContent = `📦 Picked up ${pickup.userData.bullets} bullets!`;
+          setTimeout(() => {
+            if (!dead && !healing) status.textContent = "Pointer locked (Esc to unlock)";
+          }, 2000);
+          
+          // Remove pickup
+          scene.remove(pickup);
+          bulletPickups.splice(i, 1);
+        }
+      }
+    }
+
+    // fps counter
+    const fpsEl = document.getElementById("fps");
+    let frames = 0, time = 0;
+
+    // ================= PLAYER STATS ================= //
+    let playerHP = settings.playerStartHP;
+    let playerMaxHP = settings.playerMaxHP;
+    let playerBandages = settings.playerBandages;
+    let playerBullets = 20; // Start with 20 bullets
+    let healing = false;
+    let dead = false;  // death gate
+    let kills = 0;     // NEW
+    let highscore = parseInt(localStorage.getItem("highscore") || "0"); // NEW
+    
+    // Developer options
+    let flyingMode = false;
+    let godMode = false;
+    let peacefulMode = !settings.enemyAttack;
+    
+    const hud = document.getElementById("playerHUD");
+    function updateHUD() {
+      hud.textContent = `HP:${playerHP}/${playerMaxHP} | Bandages:${playerBandages} | Bullets:${playerBullets} | Kills:${kills} | Highscore:${highscore} | Mode:${currentDifficulty.toUpperCase()}`;
+      if (playerHP <= 0 && !dead) playerDies();
+    }
+    function playerDies() {
+      dead = true;
+      status.textContent = "💀 You Died! Press R to restart or ESC for difficulty select.";
+      // NEW: show death overlay & exit pointer lock
+      const overlay = document.getElementById("deathOverlay");
+      if (overlay) overlay.style.opacity = "1";
+      if (document.pointerLockElement) document.exitPointerLock?.();
+    }
+    // NEW: quick restart with R
+    window.addEventListener("keydown", e => {
+      if (dead && (e.key === "r" || e.key === "R")) location.reload();
+      if (dead && e.key === "Escape") {
+        location.reload(); // For now, just reload to show difficulty screen
+      }
+    });
+
+    // enemies
+    const enemies = [];
+    const enemyBullets = [];
+    
+    // Enemy types with different properties
+    const enemyTypes = {
+      cube: {
+        geometry: () => new THREE.BoxGeometry(3, 3, 3),
+        color: 0xff2222,
+        hp: settings.enemyHP,
+        speed: 5,
+        shootTimer: 2,
+        size: 1.5,
+        name: "Cube"
+      },
+      sphere: {
+        geometry: () => new THREE.SphereGeometry(1.8, 12, 12),
+        color: 0xff6600,
+        hp: Math.floor(settings.enemyHP * 0.7),
+        speed: 8,
+        shootTimer: 1.5,
+        size: 1.8,
+        name: "Sphere"
+      },
+      pyramid: {
+        geometry: () => new THREE.ConeGeometry(2, 4, 6),
+        color: 0x9900ff,
+        hp: Math.floor(settings.enemyHP * 1.3),
+        speed: 3,
+        shootTimer: 3,
+        size: 2,
+        name: "Pyramid"
+      },
+      cylinder: {
+        geometry: () => new THREE.CylinderGeometry(1.5, 1.5, 3.5, 8),
+        color: 0x00ff88,
+        hp: Math.floor(settings.enemyHP * 0.9),
+        speed: 6,
+        shootTimer: 2.5,
+        size: 1.5,
+        name: "Cylinder"
+      },
+      diamond: {
+        geometry: () => new THREE.OctahedronGeometry(2),
+        color: 0xff0088,
+        hp: Math.floor(settings.enemyHP * 0.6),
+        speed: 10,
+        shootTimer: 1,
+        size: 2,
+        name: "Diamond"
+      }
+    };
+    
+    // Auto-spawn system
+    let autoSpawnTimer = 0;
+    
+    function spawnEnemy() {
+      if (dead) return;
+      
+      // Randomly select enemy type
+      const typeNames = Object.keys(enemyTypes);
+      const randomType = typeNames[Math.floor(Math.random() * typeNames.length)];
+      const enemyType = enemyTypes[randomType];
+      
+      const enemy = new THREE.Mesh(
+        enemyType.geometry(),
+        new THREE.MeshStandardMaterial({ 
+          color: enemyType.color,
+          metalness: 0.3,
+          roughness: 0.7
+        })
+      );
+      
+      // Position enemy
+      enemy.position.set(
+        cube.position.x + (Math.random() - 0.5) * 40,
+        enemyType.size + 0.5,
+        cube.position.z + (Math.random() - 0.5) * 40
+      );
+      scene.add(enemy);
+
+      // floating HP bar
+      const barGeo = new THREE.PlaneGeometry(2.2, 0.25);
+      const barMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide, depthTest: false });
+      const bar = new THREE.Mesh(barGeo, barMat);
+      bar.position.set(0, enemyType.size + 1.5, 0); // above enemy head
+      bar.renderOrder = 1;         // draw on top
+      enemy.add(bar);
+
+      enemies.push({ 
+        mesh: enemy, 
+        velocityY: 0, 
+        shootTimer: Math.random() * enemyType.shootTimer,
+        hp: enemyType.hp, 
+        maxHP: enemyType.hp,
+        bar,
+        type: randomType,
+        typeData: enemyType
+      });
+    }
+    
+    // Spawn multiple enemies
+    function spawnMultipleEnemies(count) {
+      for (let i = 0; i < count; i++) {
+        setTimeout(() => spawnEnemy(), i * 200); // Slight delay between spawns
+      }
+    }
+    
+    window.addEventListener("keydown", e => { if (e.key==="2") spawnEnemy(); });
+    
+    function enemyShoot(enemy) {
+      const dir = new THREE.Vector3().subVectors(cube.position, enemy.mesh.position).normalize();
+      const bullet = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xff4444 })
+      );
+      bullet.position.copy(enemy.mesh.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
+      scene.add(bullet);
+      enemyBullets.push({ mesh: bullet, dir });
+    }
+    
+    function updateEnemies(dt) {
+      if (dead) return; // enemies pause when dead
+      
+      // Auto-spawn system
+      if (settings.autoSpawn) {
+        autoSpawnTimer += dt * 1000; // Convert to milliseconds
+        if (autoSpawnTimer >= settings.autoSpawnInterval) {
+          spawnMultipleEnemies(settings.autoSpawnCount);
+          autoSpawnTimer = 0;
+        }
+      }
+      
+      for (const enemy of enemies) {
+        // Add rotation animation for visual appeal
+        enemy.mesh.rotation.y += dt * 0.5;
+        if (enemy.type === 'diamond') {
+          enemy.mesh.rotation.x += dt * 0.3;
+          enemy.mesh.rotation.z += dt * 0.2;
+        }
+        
+        // Skip AI movement and shooting if peaceful mode is on
+        if (peacefulMode) {
+          // Still apply gravity to enemies
+          const groundY = computeGroundYAt(enemy.mesh.position.x, enemy.mesh.position.z);
+          enemy.velocityY += gravity * dt;
+          enemy.mesh.position.y += enemy.velocityY * dt;
+          if (enemy.mesh.position.y < groundY + enemy.typeData.size) {
+            enemy.mesh.position.y = groundY + enemy.typeData.size;
+            enemy.velocityY = 0;
+          }
+          // face health bar toward camera
+          if (enemy.bar) enemy.bar.quaternion.copy(camera.quaternion);
+          continue;
+        }
+        
+        const dirXZ = new THREE.Vector3(
+          cube.position.x - enemy.mesh.position.x,0,cube.position.z - enemy.mesh.position.z
+        );
+        const dist = dirXZ.length();
+        if (dist > enemy.typeData.size + 1) {
+          dirXZ.normalize();
+          enemy.mesh.position.x += dirXZ.x * dt * enemy.typeData.speed;
+          enemy.mesh.position.z += dirXZ.z * dt * enemy.typeData.speed;
+        }
+        const groundY = computeGroundYAt(enemy.mesh.position.x, enemy.mesh.position.z);
+        enemy.velocityY += gravity * dt;
+        enemy.mesh.position.y += enemy.velocityY * dt;
+        if (enemy.mesh.position.y < groundY + enemy.typeData.size) {
+          enemy.mesh.position.y = groundY + enemy.typeData.size;
+          enemy.velocityY = 0;
+        }
+        // face health bar toward camera
+        if (enemy.bar) enemy.bar.quaternion.copy(camera.quaternion);
+
+        enemy.shootTimer -= dt;
+        if (enemy.shootTimer <= 0 && settings.enemyAttack) {
+          enemyShoot(enemy);
+          enemy.shootTimer = (enemy.typeData.shootTimer + Math.random() * 1.5) * settings.enemyShootFrequency;
+        }
+      }
+      for (let i = enemyBullets.length - 1; i >= 0; i--) {
+        const b = enemyBullets[i];
+        b.mesh.position.addScaledVector(b.dir, dt * 60);
+        if (b.mesh.position.distanceTo(cube.position) < 3 && !godMode) {
+          scene.remove(b.mesh);
+          enemyBullets.splice(i, 1);
+          playerHP = Math.max(0, playerHP - 1);
+          updateHUD();
+        } else if (b.mesh.position.length() > 2000) {
+          scene.remove(b.mesh);
+          enemyBullets.splice(i, 1);
+        }
+      }
+    }
+
+    // ================== BANDAGES ================== //
+    window.addEventListener("keydown", e => {
+      if (dead) return;
+      if (e.key.toLowerCase() === "b" && playerBandages > 0 && !healing) {
+        healing = true;
+        playerBandages--;
+        updateHUD();
+        status.textContent = `Healing... (${settings.bandageHealTime/1000}s)`;
+        setTimeout(() => {
+          playerHP = Math.min(playerMaxHP, playerHP + settings.bandageHealAmount);
+          updateHUD();
+          healing = false;
+          if (!dead) status.textContent = "Healed!";
+        }, settings.bandageHealTime);
+      }
+    });
+
+    // animate
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta();
+      time += dt; frames++;
+      if (time >= 1) { fpsEl.textContent = `FPS: ${frames}`; frames = 0; time = 0; }
+
+      // Update day/night cycle
+      updateDayNightCycle(dt);
+
+      if (!dead) {
+        // === MOVEMENT: now ALWAYS runs; slower while healing ===
+        const input = new THREE.Vector2(
+          (keys["d"]||keys["arrowright"]?1:0) - (keys["a"]||keys["arrowleft"]?1:0),
+          (keys["w"]||keys["arrowup"]?1:0) - (keys["s"]||keys["arrowdown"]?1:0)
+        );
+        if (input.lengthSq() > 0) input.normalize();
+
+        const baseSpeed = 12 * dt * (keys["shift"] ? 1.7 : 1);
+        const speed = healing ? baseSpeed * 0.35 : baseSpeed; // crawl while healing
+
+        const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+        const right   = new THREE.Vector3(-forward.z, 0, forward.x);
+        const move    = forward.multiplyScalar(input.y * speed).add(right.multiplyScalar(input.x * speed));
+        const nextPos = cube.position.clone().add(new THREE.Vector3(move.x, 0, move.z));
+
+        let blocked = false;
+        if (!flyingMode) {
+          for (const t of trees) {
+            if (t.clone().expandByScalar(1.5).containsPoint(nextPos)) { blocked = true; break; }
+          }
+        }
+        if (!blocked) cube.position.set(nextPos.x, cube.position.y, nextPos.z);
+
+        // Flying mode controls
+        if (flyingMode) {
+          if (keys[" "] || keys["space"]) {
+            cube.position.y += 15 * dt; // Fly up
+          }
+          if (keys["shift"]) {
+            cube.position.y -= 15 * dt; // Fly down
+          }
+        } else {
+          // Normal ground-based movement
+          const atLadder = onLadderAt(cube.position);
+          if (atLadder && (keys["w"] || keys["arrowup"])) {
+            cube.position.y += 10 * dt;
+            velocityY = Math.min(velocityY, 0);
+          }
+
+          const groundY = computeGroundYAt(cube.position.x, cube.position.z);
+          if ((keys[" "] || keys["space"]) && Math.abs(cube.position.y - groundY) < 0.06) {
+            velocityY = jumpStrength;
+          }
+
+          // gravity always applies (even while healing)
+          const groundY2 = computeGroundYAt(cube.position.x, cube.position.z);
+          velocityY += gravity * dt;
+          cube.position.y += velocityY * dt;
+          if (cube.position.y < groundY2) {
+            cube.position.y = groundY2;
+            velocityY = 0;
+          }
+        }
+      }
+
+      // camera follow
+      camera.position.set(cube.position.x, cube.position.y + 1.5, cube.position.z);
+      const lookDir = new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+      camera.lookAt(camera.position.clone().add(lookDir));
+
+      // bullets (enemy hit + death at 0 HP + kill count)
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.mesh.position.addScaledVector(b.dir, dt * 120);
+
+        // remove if too far
+        if (b.mesh.position.length() > 2000) {
+          scene.remove(b.mesh);
+          bullets.splice(i, 1);
+          continue;
+        }
+
+        // check collision with enemies
+        for (let j = enemies.length - 1; j >= 0; j--) {
+          const enemy = enemies[j];
+          if (b.mesh.position.distanceTo(enemy.mesh.position) < enemy.typeData.size + 1) {
+            enemy.hp--;
+            // update bar scale/color
+            if (enemy.bar) {
+              enemy.bar.scale.x = Math.max(0.001, enemy.hp / enemy.maxHP);
+              enemy.bar.material.color.set(enemy.hp > 2 ? 0x00ff00 : 0xff0000);
+            }
+
+            scene.remove(b.mesh);
+            bullets.splice(i, 1);
+            
+            if (enemy.hp <= 0) {
+              scene.remove(enemy.mesh);
+              
+              // Create bullet pickup at enemy position (always)
+              createBulletPickup(enemy.mesh.position.clone());
+              
+              // 15% chance to drop bandage pickup
+              if (Math.random() < 0.15) {
+                createBandagePickup(enemy.mesh.position.clone());
+              }
+              
+              enemies.splice(j, 1);
+              
+              // update kills + highscore
+              kills++;
+              if (kills > highscore) {
+                highscore = kills;
+                localStorage.setItem("highscore", String(highscore));
+              }
+              updateHUD();
+            }
+            break; // stop checking this bullet
+          }
+        }
+      }
+
+      updateEnemies(dt);
+      updateBulletPickups(dt);
+      updateBandagePickups(dt);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    updateHUD();
+    
+    // ================= DEVELOPER TERMINAL ================= //
+    const terminal = document.getElementById("terminal");
+    const terminalOutput = document.getElementById("terminalOutput");
+    const terminalCommand = document.getElementById("terminalCommand");
+    const devGUI = document.getElementById("devGUI");
+    
+    let terminalVisible = false;
+    let awaitingPassword = false;
+    const devPassword = "123456789987654321";
+    
+    // Toggle terminal with ~ key
+    window.addEventListener("keydown", e => {
+      if (e.key === "`" || e.key === "~") {
+        e.preventDefault();
+        toggleTerminal();
+      }
+    });
+    
+    function toggleTerminal() {
+      terminalVisible = !terminalVisible;
+      terminal.style.display = terminalVisible ? "flex" : "none";
+      if (terminalVisible) {
+        terminalCommand.focus();
+      }
+    }
+    
+    function addToTerminal(text) {
+      terminalOutput.textContent += text + "\n> ";
+      terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    }
+    
+    function clearTerminal() {
+      terminalOutput.textContent = "Developer Terminal v1.0\nType '/dev options' to access developer options\nType 'help' for available commands\nType 'clear' to clear terminal\nPress '~' to toggle terminal\n\n> ";
+    }
+    
+    terminalCommand.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        const command = terminalCommand.value.trim();
+        addToTerminal(command);
+        
+        if (awaitingPassword) {
+          if (command === devPassword) {
+            addToTerminal("✅ Access granted! Opening developer GUI...");
+            devGUI.style.display = "block";
+            terminal.style.display = "none";
+            terminalVisible = false;
+          } else {
+            addToTerminal("❌ Access denied! Incorrect password.");
+          }
+          awaitingPassword = false;
+        } else {
+          processCommand(command);
+        }
+        
+        terminalCommand.value = "";
+      }
+    });
+    
+    function processCommand(command) {
+      const cmd = command.toLowerCase();
+      
+      switch(cmd) {
+        case "/dev options":
+          addToTerminal("🔒 Developer options require authentication.");
+          addToTerminal("Enter password:");
+          awaitingPassword = true;
+          break;
+          
+        case "difficulty peaceful":
+        case "mode peaceful":
+          switchDifficulty('peaceful');
+          addToTerminal("🕊️ Switched to PEACEFUL mode - Enemies won't attack");
+          break;
+          
+        case "difficulty normal":
+        case "mode normal":
+          switchDifficulty('normal');
+          addToTerminal("⚔️ Switched to NORMAL mode - Standard gameplay");
+          break;
+          
+        case "difficulty hard":
+        case "mode hard":
+          switchDifficulty('hard');
+          addToTerminal("🔥 Switched to HARD mode - Tougher enemies + auto-spawn");
+          break;
+          
+        case "difficulty ultra":
+        case "mode ultra":
+          switchDifficulty('ultra');
+          addToTerminal("💀 Switched to ULTRA mode - Maximum challenge");
+          break;
+          
+        case "difficulty":
+        case "mode":
+          addToTerminal(`Current difficulty: ${currentDifficulty.toUpperCase()}`);
+          addToTerminal("Available modes: peaceful, normal, hard, ultra");
+          addToTerminal("Usage: 'difficulty [mode]' or 'mode [mode]'");
+          break;
+          
+        case "help":
+          addToTerminal("Available commands:");
+          addToTerminal("  /dev options - Access developer options (requires password)");
+          addToTerminal("  difficulty [mode] - Switch difficulty (peaceful/normal/hard/ultra)");
+          addToTerminal("  mode [mode] - Same as difficulty command");
+          addToTerminal("  help - Show this help message");
+          addToTerminal("  clear - Clear terminal");
+          addToTerminal("  ~ - Toggle terminal visibility");
+          break;
+          
+        case "clear":
+          clearTerminal();
+          return; // Don't add prompt again
+          
+        default:
+          addToTerminal(`Unknown command: ${command}`);
+          addToTerminal("Type 'help' for available commands.");
+          break;
+      }
+    }
+    
+    // ================= DEVELOPER GUI ================= //
+    const flyToggle = document.getElementById("flyToggle");
+    const timeSpeedSlider = document.getElementById("timeSpeed");
+    const timeSpeedValue = document.getElementById("timeSpeedValue");
+    const godModeToggle = document.getElementById("godModeToggle");
+    const peacefulToggle = document.getElementById("peacefulToggle");
+    const closeDevGUI = document.getElementById("closeDevGUI");
+    
+    // Flying mode toggle
+    flyToggle.addEventListener("click", () => {
+      flyingMode = !flyingMode;
+      flyToggle.textContent = flyingMode ? "ON" : "OFF";
+      flyToggle.classList.toggle("active", flyingMode);
+      if (flyingMode) {
+        velocityY = 0; // Stop falling when enabling flight
+      }
+    });
+    
+    // Time speed slider
+    timeSpeedSlider.addEventListener("input", () => {
+      timeSpeedMultiplier = parseFloat(timeSpeedSlider.value);
+      timeSpeedValue.textContent = timeSpeedMultiplier + "x";
+    });
+    
+    // God mode toggle
+    godModeToggle.addEventListener("click", () => {
+      godMode = !godMode;
+      godModeToggle.textContent = godMode ? "ON" : "OFF";
+      godModeToggle.classList.toggle("active", godMode);
+      if (godMode) {
+        playerHP = 10; // Restore health when enabling god mode
+        updateHUD();
+      }
+    });
+    
+    // Peaceful mode toggle
+    peacefulToggle.addEventListener("click", () => {
+      peacefulMode = !peacefulMode;
+      peacefulToggle.textContent = peacefulMode ? "ON" : "OFF";
+      peacefulToggle.classList.toggle("active", peacefulMode);
+    });
+    
+    // Close GUI
+    closeDevGUI.addEventListener("click", () => {
+      devGUI.style.display = "none";
+    });
+    
+    // Set time function
+    function setTime(timeOfDay) {
+      const dayNumber = Math.floor(gameTime / dayLength);
+      gameTime = (dayNumber * dayLength) + (timeOfDay * dayLength);
+    }
+    
+    // Switch difficulty function for terminal
+    function switchDifficulty(newDifficulty) {
+      currentDifficulty = newDifficulty;
+      const settings = getDifficultySettings(newDifficulty);
+      
+      // Update global settings
+      window.difficultySettings = settings;
+      
+      // Apply new settings to current game state
+      playerMaxHP = settings.playerMaxHP;
+      if (playerHP > playerMaxHP) playerHP = playerMaxHP; // Cap current HP if needed
+      
+      // Reset auto-spawn timer
+      autoSpawnTimer = 0;
+      
+      // Update peaceful mode for existing enemies
+      peacefulMode = !settings.enemyAttack;
+      
+      // Update HUD to show new mode
+      updateHUD()
+    }
+    
+    // God mode health regeneration
+    setInterval(() => {
+      if (godMode && playerHP < 10) {
+        playerHP = playerMaxHP;
+        updateHUD();
+      }
+    }, 100);
+    
+    // Prevent terminal from interfering with game controls
+    terminal.addEventListener("keydown", e => {
+      e.stopPropagation();
+    });
+    
+    devGUI.addEventListener("keydown", e => {
+      e.stopPropagation();
+    });
+  })();
+  }
+  </script>
+</body>
+</html>
+        
